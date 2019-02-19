@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "copy-webpack-plugin": "^4.5.1",
+    "css-loader": "^2.1.0",
+    "node-sass": "^4.7.2",
+    "sass-loader": "^6.0.6",
+    "style-loader": "^0.23.1",
+    "webpack": "4.19.1",
+    "webpack-cli": "^2.1.4",
+    "webpack-dev-server": "^3.1.14"
+  },
+  "scripts": {
+    "start:dev": "webpack-dev-server",
+    "build-dev": "webpack"
+  },
+  "devDependencies": {
+    "webpack-bundle-tracker": "^0.4.2-beta"
+  }
+}

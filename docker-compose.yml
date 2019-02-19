@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./backend/db_dumps:/docker-entrypoint-initdb.d
+      - timeline-db:/var/lib/mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: timeline
+      MYSQL_DATABASE: timeline_prod
+      MYSQL_ENTRYPOINT_INITDB: ./mysql/docker-entrypoint-initdb.d
+    networks:
+      - internal
+  django:
+    build: ./backend/
+    command: bash -c "python manage.py collectstatic --noinput && gunicorn timeline.wsgi --reload -b 0.0.0.0:8000"
+    container_name: timeline_backend
+    volumes:
+      - ./backend:/timeline
+    expose:
+      - 8000
+    networks:
+      - internal
+    depends_on:
+      - db
+  nginx:
+    restart: always
+    image: nginx:latest
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/timeline
+      - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - django
+    networks:
+      - internal
+  frontend:
+    container_name: timeline_frontend
+    build:
+      context: ./frontend
+    ports:
+      - 8080:8080
+    volumes:
+      - ./frontend:/bindmount:rw
+      - node_modules:/src/node_modules
+    environment:
+      NODE_PATH: /src/node_modules
+
+networks:
+  internal:
+
+volumes:
+  timeline-db:
+  node_modules:
