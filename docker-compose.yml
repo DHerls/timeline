@@ -22,6 +22,7 @@ services:
     container_name: timeline_backend
     volumes:
       - ./backend:/timeline
+      - ./static:/static:rw
     expose:
       - 8000
     networks:
@@ -48,6 +49,7 @@ services:
       - 8080:8080
     volumes:
       - ./frontend:/bindmount:rw
+      - ./static:/static:rw
       - node_modules:/src/node_modules
     environment:
       NODE_PATH: /src/node_modules
