@@ -133,3 +133,5 @@ WEBPACK_LOADER = {
         'IGNORE': [r'.+\.hot-update.js', r'.+\.map']
     }
 }
+
+LOGIN_REDIRECT_URL = '/'
