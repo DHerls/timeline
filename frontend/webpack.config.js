@@ -11,21 +11,33 @@ config = {
   },
   mode: 'development',
   entry: {
-    'main': './index.js'
+    'main': './main/index'
   },
   module: {
-      rules: [{
+      rules: [
+        {
           test: /\.scss$/,
           use: [
-              "style-loader", // creates style nodes from JS strings
-              "css-loader", // translates CSS into CommonJS
-              "sass-loader" // compiles Sass to CSS, using Node Sass by default
-          ]
-      }]
+                "style-loader", // creates style nodes from JS strings
+                "css-loader", // translates CSS into CommonJS
+                "sass-loader" // compiles Sass to CSS, using Node Sass by default
+            ]
+        },
+        {
+          test: /\.(js|jsx)$/,
+          exclude: /node_modules/,
+          use: {
+            loader: "babel-loader",
+            options: {
+              presets: [require.resolve('@babel/preset-env'), require.resolve('@babel/preset-react')]
+            }
+          }
+        }
+      ]
   },
   resolve: {
     modules: ['/src/node_modules'],
-    extensions: ['.js', '.jsx', '.css', '.scss']
+    extensions: ['*', '.js', '.jsx', '.css', '.scss']
   },
   watchOptions: {
     aggregateTimeout: 300,

@@ -28,3 +28,5 @@ db.sqlite3
 
 # Apple files
 .DS_Store
+
+yarn-error.log
