@@ -1,12 +1,15 @@
 import React from 'react';
-import { Route } from 'react-router';
-
-import HelloWorld from './components/hello-world';
-
+import { Route, BrowserRouter as Router } from 'react-router-dom';
+import CustomTimeline from "./components/timeline";
+import TimelineSelector from './components/timeline_selector'
 
 const routes = (
-  <Route path="/" component={HelloWorld} />
+    <Router>
+        <div>
+            <Route exact path="/" component={TimelineSelector} />
+            <Route path="/timeline" component={CustomTimeline} />
+        </div>
+    </Router>
 );
-
 
 export default routes;
