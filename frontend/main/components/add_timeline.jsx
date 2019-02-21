@@ -28,6 +28,7 @@ class AddTimelineForm extends React.Component {
 
             }
         );
+        // Prevents the form from actually submitting and redirecting back to the page
         event.preventDefault();
     }
 
