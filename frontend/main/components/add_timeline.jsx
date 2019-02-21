@@ -20,7 +20,7 @@ class AddTimelineForm extends React.Component {
     }
 
     handleSubmit(event) {
-        api.post('/api/timelines/', {name: this.state.value}).then(
+        api.post('/timelines/', {name: this.state.value}).then(
             (response) => {
                 this.setState({success: true, newId: response.data.id});
             },

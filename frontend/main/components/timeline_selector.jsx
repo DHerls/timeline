@@ -14,7 +14,7 @@ class TimelineSelector extends React.Component {
     }
 
     componentDidMount() {
-        api.get('/api/timelines/').then(
+        api.get('/timelines/').then(
             (result) => {
                 this.setState({
                     isLoaded: true,

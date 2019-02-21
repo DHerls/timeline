@@ -7,7 +7,7 @@ import AddTimelineForm from "./components/add_timeline";
 const routes = (
     <Router>
         <div>
-            conso<Link to={'/'}>List of Timelines</Link>
+            <Link to={'/'}>List of Timelines</Link>
             <Link to={'/timeline/add'}>Add new timeline</Link>
             <Switch>
                 <Route exact path="/" component={TimelineSelector} />

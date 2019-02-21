@@ -4,6 +4,7 @@ import Timeline from 'react-calendar-timeline'
 // make sure you include the timeline stylesheet or the timeline will not be styled
 import 'react-calendar-timeline/lib/Timeline.css'
 import moment from 'moment'
+import api from '../../utilities/api'
 
 const groups = [{ id: 1, title: 'group 1' }, { id: 2, title: 'group 2' }, { id: 3, title: 'group 3'}];
 
@@ -28,9 +29,21 @@ class CustomTimeline extends React.Component {
                 end_time: moment(eventStart).add(Math.floor(Math.random() * 4 + 1), 'hour')
             })
         }
-        this.state = {items: items};
+        this.state = {isLoaded: false, error: '', items: items, id: props.match.params.id};
 
         this.onTimeChange = this.onTimeChange.bind(this);
+    }
+
+    componentDidMount() {
+        console.log(this.props);
+        api.get('/timelines/' + this.state.id).then(
+            (response) => {
+                this.setState({isLoaded: true, name: response.data.name})
+            },
+            (error) => {
+                this.setState({isLoaded: true, error: error.message})
+            }
+        );
     }
 
     /**
@@ -53,22 +66,28 @@ class CustomTimeline extends React.Component {
     }
 
     render() {
-        return <div>
-            Rendered by react!
-            <Timeline
-                groups={groups}
-                items={this.state.items}
-                defaultTimeStart={this.dateStart}
-                defaultTimeEnd={this.dateEnd}
-                sidebarContent={<div>Above The Left</div>}
-                canMove={false}
-                canResize={false}
-                minZoom={5 * 60 * 1000}
-                maxZoom={7 * 24 * 60 * 60 * 1000}
-                onTimeChange={this.onTimeChange}
-                stackItems={true}
-            />
-        </div>
+        if (this.state.isLoaded) {
+            if (this.state.error){
+                return <p>Error loading timeline: { this.state.error }</p>
+            }
+            return <div>
+                <h1>{ this.state.name }</h1>
+                <Timeline
+                    groups={groups}
+                    items={this.state.items}
+                    defaultTimeStart={this.dateStart}
+                    defaultTimeEnd={this.dateEnd}
+                    sidebarContent={<div>Above The Left</div>}
+                    canMove={false}
+                    canResize={false}
+                    minZoom={5 * 60 * 1000}
+                    maxZoom={7 * 24 * 60 * 60 * 1000}
+                    onTimeChange={this.onTimeChange}
+                    stackItems={true}
+                />
+            </div>
+        }
+        return <p>Loading timeline...</p>
     }
 }
 

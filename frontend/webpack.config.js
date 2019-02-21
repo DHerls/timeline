@@ -58,7 +58,7 @@ config.plugins = [
   new webpack.DefinePlugin({
     'process.env': {
       NODE_ENV: JSON.stringify('development'),
-      BASE_URL: JSON.stringify('http://127.0.0.1:8000/'),
+      BASE_URL: JSON.stringify('http://127.0.0.1:8000/api/'),
     }
   })
 ];
