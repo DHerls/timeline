@@ -6,4 +6,4 @@ from api import serializers, models
 class TimelineListCreateView(ListCreateAPIView):
 
     serializer_class = serializers.TimelineSerializer
-    queryset = models.Timeline.objects.all()
+    queryset = models.Timeline.objects.order_by('name')

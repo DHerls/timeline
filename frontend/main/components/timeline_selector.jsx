@@ -37,13 +37,17 @@ class TimelineSelector extends React.Component {
             if (error) {
                 return <p>Error: {error.message}</p>
             } else {
-                return <ul>
-                    {items.map(item => (
-                        <li key={item.id}>
-                            <Link to={'/timeline/' + item.id }>{item.name}</Link>
-                        </li>
-                    ))}
-                </ul>
+                return <div>
+                    <h1>List of Timelines</h1>
+                    <ul>
+                        {items.map(item => (
+                            <li key={item.id}>
+                                <Link to={'/timeline/' + item.id }>{item.name}</Link>
+                            </li>
+                        ))}
+                    </ul>
+                    <Link to={'/timeline/add'}>Create New Timeline</Link>
+                    </div>
             }
         } else {
             return <p>Loading...</p>
