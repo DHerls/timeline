@@ -7,7 +7,7 @@ const routes = (
     <Router>
         <div>
             <Route exact path="/" component={TimelineSelector} />
-            <Route path="/timeline" component={CustomTimeline} />
+            <Route path="/timeline/:id" component={CustomTimeline} />
         </div>
     </Router>
 );

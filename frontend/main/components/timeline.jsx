@@ -12,7 +12,6 @@ class CustomTimeline extends React.Component {
 
     constructor(props){
         super(props);
-
         this.dateStart = moment().set({year: 2019, month: 1, date: 14, hour: 0, minute:0, second:0});
         this.dateEnd = moment().set({year: 2019, month: 1, date: 18, hour: 23, minute:59, second:59});
         this.timestampStart = this.dateStart.valueOf();
