@@ -13,6 +13,7 @@ class TimelineSerializer(serializers.ModelSerializer):
 class EventTypeSerializer(serializers.ModelSerializer):
 
     name = serializers.CharField(max_length=255, source='event_type.name')
+    event_type_id = serializers.CharField(max_length=255, source='event_type.id', read_only=True)
 
     def create(self, validated_data):
         event_type = models.EventType.objects.create(name=validated_data['event_type']['name'])
@@ -24,4 +25,4 @@ class EventTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.SharedEventType
-        fields = ('id', 'name', 'relationship', 'color_primary', 'color_secondary')
+        fields = ('event_type_id', 'name', 'relationship', 'color_primary', 'color_secondary')

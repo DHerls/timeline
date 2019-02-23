@@ -16,7 +16,6 @@ class Timeline(models.Model):
 
     name = models.CharField(max_length=255)
     event_types = models.ManyToManyField(to='api.EventType', through='api.SharedEventType', blank=True)
-    events = models.ManyToManyField(to='api.Event', through='api.SharedEvent', blank=True)
 
     class Meta:
         ordering = ('name', )
@@ -36,21 +35,10 @@ class EventType(models.Model):
         return self.name
 
 
-class SharedEventType(models.Model):
-
-    event_type = models.ForeignKey('api.EventType', on_delete=models.CASCADE)
-    timeline = models.ForeignKey('api.Timeline', on_delete=models.CASCADE)
-    relationship = models.CharField(max_length=1, choices=CHOICES_RELATIONSHIP)
-    color_primary = models.CharField(max_length=6, default='ffffff')
-    color_secondary = models.CharField(max_length=6, default='000000')
-
-    def __str__(self):
-        return "{} - {} {}".format(self.event_type.name, self.get_relationship_display(), self.timeline.name)
-
-
 class Event(models.Model):
 
     title = models.CharField(max_length=255)
+    type = models.ForeignKey('api.EventType', on_delete=models.CASCADE)
     time_start = models.DateTimeField()
     time_end = models.DateTimeField()
 
@@ -61,12 +49,25 @@ class Event(models.Model):
         return "{} {}-{}".format(self.title, self.time_start, self.time_end)
 
 
-class SharedEvent(models.Model):
+class SharedEventType(models.Model):
 
-    timeline = models.ForeignKey('api.Timeline', on_delete=models.CASCADE)
-    event = models.ForeignKey('api.Event', on_delete=models.CASCADE)
     event_type = models.ForeignKey('api.EventType', on_delete=models.CASCADE)
+    timeline = models.ForeignKey('api.Timeline', on_delete=models.CASCADE)
     relationship = models.CharField(max_length=1, choices=CHOICES_RELATIONSHIP)
     color_primary = models.CharField(max_length=6, default='ffffff')
     color_secondary = models.CharField(max_length=6, default='000000')
 
+
+class EventStyle(models.Model):
+
+    timeline = models.ForeignKey('api.Timeline', on_delete=models.CASCADE)
+    event = models.ForeignKey('api.Event', on_delete=models.CASCADE)
+    color_primary = models.CharField(max_length=6, default='ffffff')
+    color_secondary = models.CharField(max_length=6, default='000000')
+
+
+class SharedEvent(models.Model):
+
+    timeline = models.ForeignKey('api.Timeline', on_delete=models.CASCADE)
+    event = models.ForeignKey('api.Event', on_delete=models.CASCADE)
+    relationship = models.CharField(max_length=1, choices=CHOICES_RELATIONSHIP)
