@@ -30,6 +30,7 @@ class CustomTimeline extends React.Component {
         this.onTimeChange = this.onTimeChange.bind(this);
         this.onCanvasDoubleClick = this.onCanvasDoubleClick.bind(this);
         this.onValueChange = this.onValueChange.bind(this);
+        this.onItemSelect = this.onItemSelect.bind(this);
         this.onFormSubmit = this.onFormSubmit.bind(this);
     }
 
@@ -60,21 +61,23 @@ class CustomTimeline extends React.Component {
         );
         api.get('/timelines/' + this.state.id + '/events/').then(
             (response) => {
-                const items = response.data.map((item) => {
-                    return {
-                        id: item.id,
-                        group: 'ET' + item.type,
-                        title: item.title,
-                        start_time: moment(item.time_start).valueOf(),
-                        end_time: moment(item.time_end).valueOf(),
-                    }
-                });
+                const items = response.data.map(this.apiToTimeline);
                 this.setState({isLoaded: true, items: items})
             },
             (error) => {
                 this.setState({isLoaded: true, error: error.message})
             }
         );
+    }
+
+    apiToTimeline(data){
+        return {
+            id: data.id,
+            group: 'ET' + data.type,
+            title: data.title,
+            start_time: moment(data.time_start).valueOf(),
+            end_time: moment(data.time_end).valueOf(),
+        }
     }
 
     /**
@@ -112,6 +115,17 @@ class CustomTimeline extends React.Component {
             }});
     }
 
+    onItemSelect(itemId, e, time) {
+        const item = this.state.items.filter((item) => item.id === itemId)[0];
+        this.setState({mode: 'update', updatingEvent: {
+                id: itemId,
+                title: item.title,
+                start: moment(item.start_time).format('Y-MM-DD HH:mm'),
+                end: moment(item.end_time).format('Y-MM-DD HH:mm'),
+                event_type: item.group.slice(2),
+            }})
+    }
+
     onValueChange(event){
         const { updatingEvent } = this.state;
         let newEvent = {...updatingEvent};
@@ -121,26 +135,39 @@ class CustomTimeline extends React.Component {
 
     onFormSubmit(event){
         event.preventDefault();
-        api.post('/timelines/' + this.state.id + '/events/', {
-            type: this.state.updatingEvent.event_type,
-            time_start: this.state.updatingEvent.start,
-            time_end: this.state.updatingEvent.end,
-            title: this.state.updatingEvent.title,
-        }).then(
-            (response) => {
-                const { items } = this.state;
-                let newItems = items.filter(item => item.id !== 'temp');
-                newItems.push({
-                        id: response.data.id,
-                        title: response.data.title,
-                        start_time: moment(response.data.time_start).valueOf(),
-                        end_time: moment(response.data.time_end).valueOf(),
-                        group: 'ET' + response.data.type,
-                    }
-                );
-                this.setState({items: newItems });
-            }
-        );
+        const { updatingEvent } = this.state;
+        if (this.state.mode === 'add'){
+            api.post('/timelines/' + this.state.id + '/events/', {
+                type: updatingEvent.event_type,
+                time_start: updatingEvent.start,
+                time_end: updatingEvent.end,
+                title: updatingEvent.title,
+            }).then(
+                (response) => {
+                    const { items } = this.state;
+                    let newItems = items.filter(item => item.id !== 'temp');
+                    newItems.push(this.apiToTimeline(response.data));
+                    this.setState({items: newItems });
+                }
+            );
+        } else {
+            api.put('/timelines/' + this.state.id + '/events/' + updatingEvent.id + '/', {
+                type: updatingEvent.event_type,
+                time_start: updatingEvent.start,
+                time_end: updatingEvent.end,
+                title: updatingEvent.title,
+            }).then(
+                (response) => {
+                    const { items } = this.state;
+                    let newItems = items.filter(item => item.id !== updatingEvent.id);
+                    newItems.push(this.apiToTimeline(response.data));
+                    this.setState({items: newItems });
+                },
+                (error) => {
+                    console.log(error)
+                }
+            );
+        }
     }
 
     render() {
@@ -163,6 +190,7 @@ class CustomTimeline extends React.Component {
                     stackItems={true}
                     onTimeChange={this.onTimeChange}
                     onCanvasDoubleClick={this.onCanvasDoubleClick}
+                    onItemSelect={this.onItemSelect}
                 />
                 {(this.state.mode === 'add' || this.state.mode === 'update') &&
                     <form onSubmit={this.onFormSubmit}>
