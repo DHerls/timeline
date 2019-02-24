@@ -26,3 +26,22 @@ class EventTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.SharedEventType
         fields = ('event_type_id', 'name', 'relationship', 'color_primary', 'color_secondary')
+
+
+class EventSerializer(serializers.ModelSerializer):
+
+    def validate_type(self, value):
+        """Raise an exception if the event type given is not originally on the timeline given."""
+        if not value.sharedeventtype_set.filter(timeline_id=self.context['timeline_id'], relationship=models.RELATIONSHIP_ORIGINAL).exists():
+            raise serializers.ValidationError('Invalid event type')
+        return value
+
+    def create(self, validated_data):
+        return models.Event.objects.create(
+            type=validated_data['type'], time_start=validated_data['time_start'],
+            time_end=validated_data['time_end'], title=validated_data['title']
+        )
+
+    class Meta:
+        model = models.Event
+        fields = ('id', 'type', 'title', 'time_start', 'time_end')

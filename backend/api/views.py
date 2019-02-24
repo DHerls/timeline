@@ -26,3 +26,16 @@ class EventTypeListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         return models.SharedEventType.objects.filter(timeline_id=self.kwargs['pk'])
+
+
+class EventListCreateView(ListCreateAPIView):
+
+    serializer_class = serializers.EventSerializer
+
+    def get_serializer_context(self):
+        context = super(EventListCreateView, self).get_serializer_context()
+        context['timeline_id'] = self.kwargs['pk']
+        return context
+
+    def get_queryset(self):
+        return models.Event.objects.filter(type__sharedeventtype__timeline=self.kwargs['pk'])

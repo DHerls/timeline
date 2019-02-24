@@ -6,8 +6,6 @@ import 'react-calendar-timeline/lib/Timeline.css'
 import moment from 'moment'
 import api from '../../utilities/api'
 
-const groups = [{ id: 1, title: 'group 1' }, { id: 2, title: 'group 2' }, { id: 3, title: 'group 3'}];
-
 
 class CustomTimeline extends React.Component {
 
@@ -18,27 +16,60 @@ class CustomTimeline extends React.Component {
         this.timestampStart = this.dateStart.valueOf();
         this.timestampEnd = this.dateEnd.valueOf();
 
-        let items = [];
-        for (let i = 0; i < 10; i++){
-            let eventStart = moment(this.dateStart).add(Math.floor(Math.random() * 100 + 1), 'hour');
-            items.push({
-                id: i,
-                group: (i % 3) + 1,
-                title: 'item ' + i.toString(),
-                start_time: eventStart,
-                end_time: moment(eventStart).add(Math.floor(Math.random() * 4 + 1), 'hour')
-            })
-        }
-        this.state = {isLoaded: false, error: '', items: items, id: props.match.params.id};
+        this.state = {
+            isLoaded: false, error: '', groups:[], items: [], id: props.match.params.id,
+            mode: '',
+            updatingEvent: {
+                id: '',
+                title: '',
+                start: '',
+                end: ''
+            }
+        };
 
         this.onTimeChange = this.onTimeChange.bind(this);
+        this.onCanvasDoubleClick = this.onCanvasDoubleClick.bind(this);
+        this.onValueChange = this.onValueChange.bind(this);
+        this.onFormSubmit = this.onFormSubmit.bind(this);
     }
 
     componentDidMount() {
-        console.log(this.props);
         api.get('/timelines/' + this.state.id).then(
             (response) => {
                 this.setState({isLoaded: true, name: response.data.name})
+            },
+            (error) => {
+                this.setState({isLoaded: true, error: error.message})
+            }
+        );
+        api.get('/timelines/' + this.state.id + '/event-types/').then(
+            (response) => {
+                const groups = response.data.map((item) => {
+                    return {
+                        id: 'ET' + item.event_type_id,
+                        title: item.name,
+                        color_primary: item.color_primary,
+                        color_secondary: item.color_secondary
+                    }
+                });
+                this.setState({isLoaded: true, groups: groups})
+            },
+            (error) => {
+                this.setState({isLoaded: true, error: error.message})
+            }
+        );
+        api.get('/timelines/' + this.state.id + '/events/').then(
+            (response) => {
+                const items = response.data.map((item) => {
+                    return {
+                        id: item.id,
+                        group: 'ET' + item.type,
+                        title: item.title,
+                        start_time: moment(item.time_start).valueOf(),
+                        end_time: moment(item.time_end).valueOf(),
+                    }
+                });
+                this.setState({isLoaded: true, items: items})
             },
             (error) => {
                 this.setState({isLoaded: true, error: error.message})
@@ -65,6 +96,53 @@ class CustomTimeline extends React.Component {
         }
     }
 
+    onCanvasDoubleClick(group, time, e) {
+        const { items, nextId } = this.state;
+        // Everything is immutable
+        let newItems = [].concat(items);
+        const start = moment(time);
+        const end = moment(time + 1000 * 60 * 60);
+        newItems.push({id: 'temp', group: group, title: "New Event", start_time: start.valueOf(), end_time: end.valueOf()});
+        this.setState({items: newItems, nextId: nextId + 1, mode: 'add', updatingEvent: {
+                id: 'temp',
+                title: 'New Event',
+                start: start.format('Y-MM-DD HH:mm'),
+                end: end.format('Y-MM-DD HH:mm'),
+                event_type: group.slice(2)
+            }});
+    }
+
+    onValueChange(event){
+        const { updatingEvent } = this.state;
+        let newEvent = {...updatingEvent};
+        newEvent[event.target.name] = event.target.value;
+        this.setState({updatingEvent: newEvent})
+    }
+
+    onFormSubmit(event){
+        event.preventDefault();
+        api.post('/timelines/' + this.state.id + '/events/', {
+            type: this.state.updatingEvent.event_type,
+            time_start: this.state.updatingEvent.start,
+            time_end: this.state.updatingEvent.end,
+            title: this.state.updatingEvent.title,
+        }).then(
+            (response) => {
+                const { items } = this.state;
+                let newItems = items.filter(item => item.id !== 'temp');
+                newItems.push({
+                        id: response.data.id,
+                        title: response.data.title,
+                        start_time: moment(response.data.time_start).valueOf(),
+                        end_time: moment(response.data.time_end).valueOf(),
+                        group: 'ET' + response.data.type,
+                    }
+                );
+                this.setState({items: newItems });
+            }
+        );
+    }
+
     render() {
         if (this.state.isLoaded) {
             if (this.state.error){
@@ -73,7 +151,7 @@ class CustomTimeline extends React.Component {
             return <div>
                 <h1>{ this.state.name }</h1>
                 <Timeline
-                    groups={groups}
+                    groups={this.state.groups}
                     items={this.state.items}
                     defaultTimeStart={this.dateStart}
                     defaultTimeEnd={this.dateEnd}
@@ -82,9 +160,18 @@ class CustomTimeline extends React.Component {
                     canResize={false}
                     minZoom={5 * 60 * 1000}
                     maxZoom={7 * 24 * 60 * 60 * 1000}
-                    onTimeChange={this.onTimeChange}
                     stackItems={true}
+                    onTimeChange={this.onTimeChange}
+                    onCanvasDoubleClick={this.onCanvasDoubleClick}
                 />
+                {(this.state.mode === 'add' || this.state.mode === 'update') &&
+                    <form onSubmit={this.onFormSubmit}>
+                        <label>Event Name: <input type={'text'} name='title' value={this.state.updatingEvent.title} onChange={this.onValueChange}/></label>
+                        <label>Event Start: <input type={'text'} name='start' value={this.state.updatingEvent.start} onChange={this.onValueChange}/></label>
+                        <label>Event End: <input type={'text'} name='end' value={this.state.updatingEvent.end} onChange={this.onValueChange}/></label>
+                        <button type={'submit'}>{this.state.mode === 'add' ? 'Add' : 'Update'} Event</button>
+                    </form>
+                }
             </div>
         }
         return <p>Loading timeline...</p>
