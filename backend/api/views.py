@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, RetrieveUpdateAPIView
 
 from api import serializers, models
 
@@ -39,3 +39,16 @@ class EventListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         return models.Event.objects.filter(type__sharedeventtype__timeline=self.kwargs['pk'])
+
+
+class EventRetrieveUpdateView(RetrieveUpdateAPIView):
+
+    serializer_class = serializers.EventSerializer
+
+    def get_serializer_context(self):
+        context = super(EventRetrieveUpdateView, self).get_serializer_context()
+        context['timeline_id'] = self.kwargs['timeline']
+        return context
+
+    def get_queryset(self):
+        return models.Event.objects.filter(type__sharedeventtype__timeline=self.kwargs['timeline'])
