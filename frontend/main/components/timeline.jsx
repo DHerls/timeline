@@ -26,7 +26,8 @@ class CustomTimeline extends React.Component {
                 start: '',
                 end: ''
             },
-            eventTypes: []
+            eventTypes: [],
+            backupItem: {}
         };
 
         this.onTimeChange = this.onTimeChange.bind(this);
@@ -35,6 +36,51 @@ class CustomTimeline extends React.Component {
         this.onItemSelect = this.onItemSelect.bind(this);
         this.onFormSubmit = this.onFormSubmit.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.removeItem = this.removeItem.bind(this);
+        this.cancelEdit = this.cancelEdit.bind(this);
+        this.backupItem = this.backupItem.bind(this);
+        this.restoreItem = this.restoreItem.bind(this);
+        this.updateItem = this.updateItem.bind(this);
+    }
+
+    removeItem(id){
+        const { items } = this.state;
+        let newItems = items.filter(item => item.id !== id);
+        this.setState({items: newItems});
+    }
+
+    backupItem(id){
+        const item = this.state.items.find(i => i.id === id);
+        this.setState({backupItem: item});
+    }
+
+    restoreItem(){
+        if (this.state.backupItem){
+            let newItems = this.state.items.filter(item => item.id !== this.state.backupItem.id);
+            newItems.push(this.state.backupItem);
+            this.setState({items: newItems, backupItem: {}});
+        }
+    }
+
+    /**
+     * Applies the changes in the updatingItem to the item in the timeline
+     */
+    updateItem(){
+        if (this.state.updatingEvent) {
+            const start = moment(this.state.updatingEvent.start);
+            const end = moment(this.state.updatingEvent.end);
+            if (start.isValid() && end.isValid()){
+                let newItems = this.state.items.filter(item => item.id !== this.state.updatingEvent.id);
+                newItems.push({
+                    id: this.state.updatingEvent.id,
+                    start_time: start.valueOf() + 100000,
+                    end_time: end.valueOf(),
+                    title: this.state.updatingEvent.title,
+                    group: 'ET' + this.state.updatingEvent.event_type
+                });
+                this.setState({items: newItems});
+            }
+        }
     }
 
     componentDidMount() {
@@ -124,8 +170,21 @@ class CustomTimeline extends React.Component {
             }});
     }
 
+    cancelEdit(){
+        if (this.state.mode === 'add') {
+            this.removeItem('temp');
+        } else {
+            this.restoreItem();
+        }
+        this.setState({mode: ''});
+    }
+
     onItemSelect(itemId, e, time) {
-        const item = this.state.items.filter((item) => item.id === itemId)[0];
+        if (itemId === 'temp'){
+            return;
+        }
+        const item = this.state.items.find((item) => item.id === itemId);
+        this.backupItem(itemId);
         this.setState({mode: 'update', updatingEvent: {
                 id: itemId,
                 title: item.title,
@@ -139,7 +198,7 @@ class CustomTimeline extends React.Component {
         const { updatingEvent } = this.state;
         let newEvent = {...updatingEvent};
         newEvent[event.target.name] = event.target.value;
-        this.setState({updatingEvent: newEvent})
+        this.setState({updatingEvent: newEvent}, this.updateItem);
     }
 
     onFormSubmit(event){
@@ -182,7 +241,30 @@ class CustomTimeline extends React.Component {
     handleChange(newValue, actionMeta) {
         const { updatingEvent } = this.state;
         updatingEvent.event_type = newValue.value;
-        this.setState({ updatingEvent });
+        this.setState({ updatingEvent }, this.updateItem);
+    }
+
+    itemRenderer({
+                     item,
+                     itemContext,
+                     getItemProps,
+                     getResizeProps
+                 }) {
+        const {left: leftResizeProps, right: rightResizeProps} = getResizeProps();
+        return (
+            <div {...getItemProps(item.itemProps)}>
+                {itemContext.useResizeHandle ? <div {...leftResizeProps} /> : ''}
+
+                <div
+                    className="rct-item-content"
+                    style={{maxHeight: `${itemContext.dimensions.height}`}}
+                >
+                    {item.title}
+                </div>
+
+                {itemContext.useResizeHandle ? <div {...rightResizeProps} /> : ''}
+            </div>
+        )
     }
 
     render() {
@@ -195,6 +277,7 @@ class CustomTimeline extends React.Component {
                 <Timeline
                     groups={this.state.groups}
                     items={this.state.items}
+                    itemRenderer={this.itemRenderer}
                     defaultTimeStart={this.dateStart}
                     defaultTimeEnd={this.dateEnd}
                     sidebarContent={<div>Above The Left</div>}
@@ -204,6 +287,7 @@ class CustomTimeline extends React.Component {
                     maxZoom={7 * 24 * 60 * 60 * 1000}
                     stackItems={true}
                     onTimeChange={this.onTimeChange}
+                    onCanvasClick={this.cancelEdit}
                     onCanvasDoubleClick={this.onCanvasDoubleClick}
                     onItemSelect={this.onItemSelect}
                 />
@@ -214,6 +298,7 @@ class CustomTimeline extends React.Component {
                         <label>Event End: <input type={'text'} name='end' value={this.state.updatingEvent.end} onChange={this.onValueChange}/></label>
                         <Select options={this.state.eventTypes} value={this.state.eventTypes.find(item => item.value === this.state.updatingEvent.event_type)} onChange={this.handleChange} />
                         <button type={'submit'}>{this.state.mode === 'add' ? 'Add' : 'Update'} Event</button>
+                        <button onClick={this.cancelEdit}>Cancel</button>
                     </form>
                 }
             </div>
