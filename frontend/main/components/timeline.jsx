@@ -27,7 +27,8 @@ class CustomTimeline extends React.Component {
                 end: ''
             },
             eventTypes: [],
-            backupItem: {}
+            backupItem: {},
+            selected: [],
         };
 
         this.onTimeChange = this.onTimeChange.bind(this);
@@ -41,6 +42,7 @@ class CustomTimeline extends React.Component {
         this.backupItem = this.backupItem.bind(this);
         this.restoreItem = this.restoreItem.bind(this);
         this.updateItem = this.updateItem.bind(this);
+        this.onCanvasClick = this.onCanvasClick.bind(this);
     }
 
     removeItem(id){
@@ -73,7 +75,7 @@ class CustomTimeline extends React.Component {
                 let newItems = this.state.items.filter(item => item.id !== this.state.updatingEvent.id);
                 newItems.push({
                     id: this.state.updatingEvent.id,
-                    start_time: start.valueOf() + 100000,
+                    start_time: start.valueOf(),
                     end_time: end.valueOf(),
                     title: this.state.updatingEvent.title,
                     group: 'ET' + this.state.updatingEvent.event_type
@@ -161,7 +163,7 @@ class CustomTimeline extends React.Component {
         const start = moment(time);
         const end = moment(time + 1000 * 60 * 60);
         newItems.push({id: 'temp', group: group, title: "New Event", start_time: start.valueOf(), end_time: end.valueOf()});
-        this.setState({items: newItems, nextId: nextId + 1, mode: 'add', updatingEvent: {
+        this.setState({items: newItems, nextId: nextId + 1, mode: 'add', selected: ['temp'], updatingEvent: {
                 id: 'temp',
                 title: 'New Event',
                 start: start.format('Y-MM-DD HH:mm'),
@@ -185,13 +187,18 @@ class CustomTimeline extends React.Component {
         }
         const item = this.state.items.find((item) => item.id === itemId);
         this.backupItem(itemId);
-        this.setState({mode: 'update', updatingEvent: {
+        this.setState({mode: 'update', selected: [itemId], updatingEvent: {
                 id: itemId,
                 title: item.title,
                 start: moment(item.start_time).format('Y-MM-DD HH:mm'),
                 end: moment(item.end_time).format('Y-MM-DD HH:mm'),
                 event_type: item.group.slice(2),
             }})
+    }
+
+    onCanvasClick(groupId, time, e){
+        this.cancelEdit();
+        this.setState({selected: [-5]});
     }
 
     onValueChange(event){
@@ -215,7 +222,7 @@ class CustomTimeline extends React.Component {
                     const { items } = this.state;
                     let newItems = items.filter(item => item.id !== 'temp');
                     newItems.push(this.apiToTimeline(response.data));
-                    this.setState({items: newItems });
+                    this.setState({items: newItems, mode: '' });
                 }
             );
         } else {
@@ -229,7 +236,7 @@ class CustomTimeline extends React.Component {
                     const { items } = this.state;
                     let newItems = items.filter(item => item.id !== updatingEvent.id);
                     newItems.push(this.apiToTimeline(response.data));
-                    this.setState({items: newItems });
+                    this.setState({items: newItems, mode: '' });
                 },
                 (error) => {
                     console.log(error)
@@ -285,6 +292,7 @@ class CustomTimeline extends React.Component {
                     canResize={false}
                     minZoom={5 * 60 * 1000}
                     maxZoom={7 * 24 * 60 * 60 * 1000}
+                    selected={this.state.selected}
                     stackItems={true}
                     onTimeChange={this.onTimeChange}
                     onCanvasClick={this.cancelEdit}
@@ -296,7 +304,15 @@ class CustomTimeline extends React.Component {
                         <label>Event Name: <input type={'text'} name='title' value={this.state.updatingEvent.title} onChange={this.onValueChange}/></label>
                         <label>Event Start: <input type={'text'} name='start' value={this.state.updatingEvent.start} onChange={this.onValueChange}/></label>
                         <label>Event End: <input type={'text'} name='end' value={this.state.updatingEvent.end} onChange={this.onValueChange}/></label>
-                        <Select options={this.state.eventTypes} value={this.state.eventTypes.find(item => item.value === this.state.updatingEvent.event_type)} onChange={this.handleChange} />
+                        <div style={{display: 'inline-block', width: '300px'}}>
+                            <label>Event Type:
+                                <Select options={this.state.eventTypes}
+                                        value={this.state.eventTypes.find(item => item.value === this.state.updatingEvent.event_type)}
+                                        onChange={this.handleChange}
+                                />
+                            </label>
+
+                        </div>
                         <button type={'submit'}>{this.state.mode === 'add' ? 'Add' : 'Update'} Event</button>
                         <button onClick={this.cancelEdit}>Cancel</button>
                     </form>
