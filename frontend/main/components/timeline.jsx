@@ -1,6 +1,7 @@
 import React from 'react';
 
 import Timeline from 'react-calendar-timeline'
+import Select from 'react-select'
 // make sure you include the timeline stylesheet or the timeline will not be styled
 import 'react-calendar-timeline/lib/Timeline.css'
 import moment from 'moment'
@@ -24,7 +25,8 @@ class CustomTimeline extends React.Component {
                 title: '',
                 start: '',
                 end: ''
-            }
+            },
+            eventTypes: []
         };
 
         this.onTimeChange = this.onTimeChange.bind(this);
@@ -32,6 +34,7 @@ class CustomTimeline extends React.Component {
         this.onValueChange = this.onValueChange.bind(this);
         this.onItemSelect = this.onItemSelect.bind(this);
         this.onFormSubmit = this.onFormSubmit.bind(this);
+        this.handleChange = this.handleChange.bind(this);
     }
 
     componentDidMount() {
@@ -53,7 +56,13 @@ class CustomTimeline extends React.Component {
                         color_secondary: item.color_secondary
                     }
                 });
-                this.setState({isLoaded: true, groups: groups})
+                const eventTypes = response.data.map((item) => {
+                    return {
+                        value: item.event_type_id,
+                        label: item.name,
+                    }
+                });
+                this.setState({isLoaded: true, groups: groups, eventTypes})
             },
             (error) => {
                 this.setState({isLoaded: true, error: error.message})
@@ -170,6 +179,12 @@ class CustomTimeline extends React.Component {
         }
     }
 
+    handleChange(newValue, actionMeta) {
+        const { updatingEvent } = this.state;
+        updatingEvent.event_type = newValue.value;
+        this.setState({ updatingEvent });
+    }
+
     render() {
         if (this.state.isLoaded) {
             if (this.state.error){
@@ -197,6 +212,7 @@ class CustomTimeline extends React.Component {
                         <label>Event Name: <input type={'text'} name='title' value={this.state.updatingEvent.title} onChange={this.onValueChange}/></label>
                         <label>Event Start: <input type={'text'} name='start' value={this.state.updatingEvent.start} onChange={this.onValueChange}/></label>
                         <label>Event End: <input type={'text'} name='end' value={this.state.updatingEvent.end} onChange={this.onValueChange}/></label>
+                        <Select options={this.state.eventTypes} value={this.state.eventTypes.find(item => item.value === this.state.updatingEvent.event_type)} onChange={this.handleChange} />
                         <button type={'submit'}>{this.state.mode === 'add' ? 'Add' : 'Update'} Event</button>
                     </form>
                 }
